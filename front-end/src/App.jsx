@@ -1,0 +1,108 @@
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
+import { ConfigProvider, App } from "antd";
+import AppLayout from "./components/common/AppLayout";
+import HeaderLayout from "./components/common/HeaderLayout"; // Assuming ProfileLayout is named HeaderLayout
+import PrivateRoute from "./components/common/PrivateRoute";
+import PublicRoute from "./components/common/PublicRoute";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ExpensesPage from "./pages/ExpensesPage";
+import UsersPage from "./pages/UsersPage";
+import ProfilePage from "./pages/ProfilePage";
+import { AuthProvider } from "./context/AuthContext";
+import "antd/dist/reset.css";
+import "./index.css";
+
+const theme = {
+  token: {
+    colorPrimary: "#6c63ff",
+    borderRadius: 6,
+    colorBgContainer: "#f0f2f5",
+    colorLink: "#6c63ff",
+    colorLinkHover: "#8a82ff",
+  },
+  components: {
+    Menu: {
+      itemSelectedBg: "#6c63ff",
+      itemSelectedColor: "#fff",
+      itemHoverBg: "rgba(108, 99, 255, 0.1)",
+    },
+    Descriptions: {
+      colorFillAlter: "#fff",
+    },
+  },
+};
+
+// Define the layouts for our routes
+const MainAppLayout = () => (
+  <AppLayout>
+    <Outlet />
+  </AppLayout>
+);
+const ProfileLayoutRoute = () => (
+  <HeaderLayout>
+    <Outlet />
+  </HeaderLayout>
+); // Use the correct name here
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* --- PUBLIC ROUTES --- */}
+      {/* Accessible only when logged out */}
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+      </Route>
+
+      {/* --- PROTECTED ROUTES --- */}
+      {/* Accessible only when logged in */}
+      <Route element={<PrivateRoute />}>
+        {/* Group for main app pages that use the sidebar */}
+        <Route element={<MainAppLayout />}>
+          <Route path="/" element={<Navigate to="/expenses" />} />
+          <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route
+            path="/analysis"
+            element={
+              <>
+                <div>Analysis Page</div>
+              </>
+            }
+          />
+        </Route>
+
+        {/* Group for profile page that uses the header-only layout */}
+        <Route element={<ProfileLayoutRoute />}>
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+      </Route>
+    </Routes>
+  );
+}
+
+function AppWrapper() {
+  return (
+    <Router>
+      <AuthProvider>
+        <ConfigProvider theme={theme}>
+          <App>
+            <AppRoutes />
+          </App>
+        </ConfigProvider>
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default AppWrapper;

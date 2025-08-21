@@ -1,0 +1,49 @@
+import axios from "axios";
+
+const API_URL = "/api/users";
+
+const signup = async (userData) => {
+  const { data } = await axios.post(`${API_URL}/signup`, userData);
+  if (data) {
+    localStorage.setItem("userInfo", JSON.stringify(data));
+  }
+  return data;
+};
+
+const login = async (email, password) => {
+  const { data } = await axios.post(`${API_URL}/login`, { email, password });
+  if (data) {
+    localStorage.setItem("userInfo", JSON.stringify(data));
+  }
+  return data;
+};
+
+const logout = () => {
+  localStorage.removeItem("userInfo");
+};
+
+const updateProfile = async (userData) => {
+  const { token } = JSON.parse(localStorage.getItem("userInfo"));
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  const { data } = await axios.put(`${API_URL}/profile`, userData, config);
+
+  if (data) {
+    localStorage.setItem("userInfo", JSON.stringify(data));
+  }
+  return data;
+};
+
+const authService = {
+  signup,
+  login,
+  logout,
+  updateProfile,
+};
+
+export default authService;

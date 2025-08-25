@@ -2,14 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Button, Space, Card, Form, App } from "antd";
 import dayjs from "dayjs";
 
-// Import our common components and services
 import GenericForm from "../common/GenericForm";
 import PrimaryButton from "../common/PrimaryButton";
 import { useAuth } from "../../context/AuthContext";
-import authService from "../../services/authService"; // We'll add an updateProfile function to this
-
+import authService from "../../services/authService";
 const MyAccountView = () => {
-  const { user, setUser } = useAuth(); // Get the current user and the state setter
+  const { user, setUser } = useAuth();
   const { notification } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -37,7 +35,6 @@ const MyAccountView = () => {
       span: 8,
       disabled: isDisabled,
     },
-    // Address
     {
       name: "streetAddress",
       label: "Street Address",
@@ -71,8 +68,7 @@ const MyAccountView = () => {
       label: "Complete Address",
       type: "text",
       disabled: isDisabled,
-    }, // Assuming this is a larger text field
-    // Contact
+    },
     {
       name: "phone",
       label: "Phone Number",
@@ -80,8 +76,7 @@ const MyAccountView = () => {
       span: 12,
       disabled: isDisabled,
     },
-    { name: "email", label: "Email", type: "email", span: 12, disabled: true }, // Email should not be editable
-    // Bio
+    { name: "email", label: "Email", type: "email", span: 12, disabled: true },
     {
       name: "dob",
       label: "Date of Birth",
@@ -96,31 +91,26 @@ const MyAccountView = () => {
       span: 8,
       disabled: isDisabled,
     },
-    { name: "gender", label: "Gender", type: "text", span: 8 }, // Could also be a Select component
-    // Financial
+    { name: "gender", label: "Gender", type: "text", span: 8 },
     {
       name: "budgetLimit",
       label: "Budget Limit(PKR)",
       type: "number",
       disabled: isDisabled,
     },
-    // About
     {
       name: "aboutMe",
       label: "About Me / Bio",
       type: "textarea",
       disabled: isDisabled,
-    }, // Need to add 'textarea' support
+    },
   ];
 
-  // 2. The handler that will be called on form submission
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // 3. Call the (soon to be created) update service
       const updatedUser = await authService.updateProfile(values);
 
-      // 4. Update the global state with the new user data from the server
       setUser(updatedUser);
       setIsEditing(false);
       notification.success({
@@ -157,13 +147,10 @@ const MyAccountView = () => {
       </Space>
     </Form.Item>
   );
-  // We need to set initialValues for the form from our user context
   useEffect(() => {
     if (user) {
-      // Before setting the values, convert the date of birth string to a dayjs object
       form.setFieldsValue({
         ...user,
-        // Check if user.dob exists before trying to parse it
         dob: user.dob ? dayjs(user.dob) : null,
         address: `${user.streetAddress}, ${user.city}, ${user.state}, ${user.zipCode}`,
       });
@@ -181,9 +168,8 @@ const MyAccountView = () => {
         )
       }
       styles={{
-        // Target the 'body' part of the Card component
         body: {
-          backgroundColor: "white", // Use your desired background color
+          backgroundColor: "white",
         },
       }}
     >

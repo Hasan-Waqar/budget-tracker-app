@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Table,
   Button,
@@ -11,6 +11,7 @@ import {
   Col,
   Select,
   Form,
+  App,
 } from "antd";
 import {
   PlusOutlined,
@@ -24,64 +25,40 @@ import {
 import DataTable from "../components/common/DataTable";
 import GenericForm from "../components/common/GenericForm";
 import PrimaryButton from "../components/common/PrimaryButton";
+import userService from "../services/userService";
 import { v4 as uuidv4 } from "uuid";
 
-// --- MOCK DATA ---
-const demoData = [
-  {
-    key: "1",
-    firstName: "Cameron",
-    lastName: "Williamson",
-    email: "tanya.hill@example.com",
-    number: "(406) 555-0120",
-    role: "Admin",
-    budgetLimit: 50000,
-  },
-  {
-    key: "2",
-    firstName: "Brooklyn",
-    lastName: "Simmons",
-    email: "simmons.brooklyn@example.com",
-    number: "(684) 555-0102",
-    role: "User",
-    budgetLimit: 25000,
-  },
-  {
-    key: "3",
-    firstName: "Leslie",
-    lastName: "Alexander",
-    email: "savannah.brooklyn@example.com",
-    number: "(217) 555-0113",
-    role: "Admin",
-    budgetLimit: 75000,
-  },
-  {
-    key: "4",
-    firstName: "Savannah",
-    lastName: "Nguyen",
-    email: "simmons.brooklyn@example.com",
-    number: "(302) 555-0107",
-    role: "User",
-    budgetLimit: 15000,
-  },
-  {
-    key: "5",
-    firstName: "Darlene",
-    lastName: "Robertson",
-    email: "alexander.brooklyn@example.com",
-    number: "(316) 555-0115",
-    role: "Admin",
-    budgetLimit: 100000,
-  },
-];
-
 const UsersPage = () => {
-  const [users, setUsers] = useState(demoData);
+  const [users, setUsers] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [form] = Form.useForm();
+  const { notification } = App.useApp();
+
+  const [filters, setFilters] = useState({
+    sortBy: "name",
+    keyword: "",
+  });
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await userService.getAllUsers(filters);
+      const formattedData = data.map((user) => ({ ...user, key: user._id }));
+      setUsers(formattedData);
+    } catch (error) {
+      notification.error({ message: "Failed to fetch users" });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   useEffect(() => {
     if (isModalVisible) {
@@ -95,6 +72,9 @@ const UsersPage = () => {
     }
   }, [isModalVisible, isDeleteModalVisible, editingUser, deletingUser, form]);
 
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
   const showNotification = (type, message, description) => {
     notification.open({
       message,
@@ -133,34 +113,33 @@ const UsersPage = () => {
     setIsDeleteModalVisible(true);
   };
 
-  const handleFormSubmit = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        if (editingUser) {
-          setUsers(
-            users.map((u) =>
-              u.key === editingUser.key ? { ...editingUser, ...values } : u
-            )
-          );
-          showNotification(
-            "success",
-            "User Updated",
-            "User edited successfully!"
-          );
-        } else {
-          const newUser = { key: uuidv4(), role: "User", ...values };
-          setUsers([newUser, ...users]);
-          showNotification("success", "User Added", "User added successfully!");
-        }
-        handleCancel();
-      })
-      .catch((info) => console.log("Validate Failed:", info));
+  const handleFormSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      if (editingUser) {
+        await userService.updateUser(editingUser._id, values);
+        notification.success({ message: "User updated successfully!" });
+      } else {
+        await userService.createUser(values);
+        notification.success({ message: "User added successfully!" });
+      }
+
+      fetchUsers();
+      handleCancel();
+    } catch (error) {
+      const action = editingUser ? "update" : "add";
+      notification.error({ message: "Failed to update user" });
+    }
   };
 
-  const handleDeleteConfirm = () => {
-    setUsers(users.filter((u) => u.key !== deletingUser.key));
-    showNotification("error", "User Deleted", "User deleted successfully!");
+  const handleDeleteConfirm = async () => {
+    try {
+      await userService.deleteUser(deletingUser._id);
+      notification.success({ message: "User deleted successfully!" });
+      fetchUsers();
+    } catch (error) {
+      notification.error({ message: "Failed to delete user" });
+    }
     handleCancel();
   };
   const filterLabelStyle = {
@@ -178,7 +157,7 @@ const UsersPage = () => {
     { title: "First Name", dataIndex: "firstName", key: "firstName" },
     { title: "Last Name", dataIndex: "lastName", key: "lastName" },
     { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Number", dataIndex: "number", key: "number" },
+    { title: "Number", dataIndex: "phone", key: "phone" },
     { title: "Role", dataIndex: "role", key: "role" },
     {
       title: "Actions",
@@ -224,19 +203,42 @@ const UsersPage = () => {
       rules: [{ required: true, type: "email" }],
       disabled: isEditing || isDisabled,
     },
-    {
-      name: "number",
-      label: "Phone Number",
-      type: "text",
-      span: 12,
-      rules: [{ required: true }],
-      disabled: isDisabled,
-    },
+    ...(!isEditing
+      ? [
+          {
+            name: "password",
+            label: "Password",
+            type: "password",
+            span: 24,
+            rules: [{ required: true, min: 6 }],
+          },
+        ]
+      : [
+          {
+            name: "phone",
+            label: "Phone Number",
+            type: "text",
+            span: 12,
+            disabled: isDisabled,
+          },
+        ]),
     {
       name: "budgetLimit",
       label: "Budget Limit (PKR)",
       type: "number",
       span: 12,
+      rules: [{ required: true }],
+      disabled: isDisabled,
+    },
+    {
+      name: "role",
+      label: "Role",
+      type: "select",
+      span: 12,
+      options: [
+        { value: "User", label: "User" },
+        { value: "Admin", label: "Admin" },
+      ],
       rules: [{ required: true }],
       disabled: isDisabled,
     },
@@ -283,17 +285,19 @@ const UsersPage = () => {
       <Space size="middle">
         <Space.Compact>
           <span style={filterLabelStyle}>Sort By</span>{" "}
-          {/* Re-using style from ExpensesPage */}
           <Select
+            value={filters.sortBy}
+            onChange={(value) => handleFilterChange("sortBy", value)}
             variant="borderless"
-            defaultValue="name"
             style={{ width: 120 }}
           >
             <Select.Option value="name">Name</Select.Option>
+            <Select.Option value="role">Role</Select.Option>
           </Select>
         </Space.Compact>
         <Input
-          placeholder="Search"
+          placeholder="Search by name or email"
+          onChange={(e) => handleFilterChange("keyword", e.target.value)}
           prefix={<SearchOutlined />}
           style={{ width: 300 }}
         />

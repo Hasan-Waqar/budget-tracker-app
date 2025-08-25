@@ -6,12 +6,11 @@ const generateToken = (res, id) => {
     expiresIn: "30d",
   });
 
-  // SET THE TOKEN IN AN HTTP-ONLY COOKIE
   res.cookie("jwt", token, {
-    httpOnly: true, // Prevents client-side JS from accessing the cookie
-    secure: process.env.NODE_ENV !== "development", // Use secure cookies in production
-    sameSite: "strict", // Helps prevent CSRF attacks
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 };
 
@@ -73,6 +72,8 @@ const loginUser = async (req, res) => {
       res.json({
         _id: user._id,
         firstName: user.firstName,
+        lastName: user.lastName,
+        budgetLimit: user.budgetLimit,
         email: user.email,
         role: user.role,
         pfp: user.pfp,
@@ -145,4 +146,154 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-module.exports = { signupUser, loginUser, updateUserProfile };
+const getUsers = async (req, res) => {
+  const keyword = req.query.keyword
+    ? {
+        $or: [
+          { firstName: { $regex: req.query.keyword, $options: "i" } },
+          { lastName: { $regex: req.query.keyword, $options: "i" } },
+          { email: { $regex: req.query.keyword, $options: "i" } },
+        ],
+      }
+    : {};
+
+  let sort = {};
+  const sortBy = req.query.sortBy || "name";
+  switch (sortBy) {
+    case "role":
+      sort = { role: 1 };
+      break;
+    case "name":
+    default:
+      sort = { firstName: 1 };
+      break;
+  }
+
+  const users = await User.find({ ...keyword }).sort(sort);
+  res.status(200).json(users);
+};
+
+const getUserById = async (req, res) => {
+  const user = await User.findById(req.params.id).select("-password");
+  if (user) {
+    res.status(200).json(user);
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+};
+
+const updateUser = async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    user.firstName = req.body.firstName || user.firstName;
+    user.lastName = req.body.lastName || user.lastName;
+    user.role = req.body.role || user.role;
+    user.phone = req.body.phone || user.phone;
+    user.budgetLimit = req.body.budgetLimit || user.budgetLimit;
+
+    const updatedUser = await user.save();
+    res.status(200).json({
+      _id: updatedUser._id,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    });
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    await User.deleteOne({ _id: user._id });
+    res.status(200).json({ message: "User deleted successfully" });
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+};
+
+const updateUserPfp = async (req, res) => {
+  try {
+    // Multer has already uploaded the file to Cloudinary.
+    // The URL of the uploaded image is available in req.file.path.
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded." });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Update the pfp field with the new URL from Cloudinary
+    user.pfp = req.file.path;
+    const updatedUser = await user.save();
+
+    // Send back the complete, updated user object so the frontend state can be synced
+    res.status(200).json({
+      _id: updatedUser._id,
+      firstName: updatedUser.firstName,
+      // ... include all other user fields that are in your AuthContext ...
+      pfp: updatedUser.pfp,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Server error while updating profile picture." });
+  }
+};
+
+const createUser = async (req, res) => {
+  // Admin provides these details in the form
+  const { firstName, lastName, email, password, budgetLimit, role } = req.body;
+
+  try {
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res
+        .status(400)
+        .json({ message: "User with this email already exists" });
+    }
+
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password, // The model's pre-save hook will hash this
+      budgetLimit,
+      role: role || "User", // Default to 'User' if no role is provided
+    });
+
+    if (user) {
+      // We don't need to send a token, just confirmation
+      res.status(201).json({
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+      });
+    } else {
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server Error: " + error.message });
+  }
+};
+
+module.exports = {
+  signupUser,
+  loginUser,
+  updateUserProfile,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  updateUserPfp,
+  createUser,
+};

@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  Table,
   Button,
   Progress,
   Space,
   Modal,
-  notification,
   Typography,
   Input,
   Row,
@@ -13,126 +11,93 @@ import {
   Select,
   DatePicker,
   Form,
+  App,
 } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  CheckCircleFilled,
-  CloseCircleFilled,
   SearchOutlined,
 } from "@ant-design/icons";
 import DataTable from "../components/common/DataTable";
 import GenericForm from "../components/common/GenericForm";
-import { v4 as uuidv4 } from "uuid";
-import PrimaryButton from "../components/common/PrimaryButton";
+import expenseService from "../services/expenseService";
+import { useAuth } from "../context/AuthContext";
 import dayjs from "dayjs";
 
-const demoData = [
-  {
-    key: "1",
-    title: "Prestigious Clientele Segment",
-    expenditure: 50,
-    price: 25000,
-    date: "22 Jan 2022",
-    user: "guy-hawkins",
-  },
-  {
-    key: "2",
-    title: "Luxury Lifestyle Patrons",
-    expenditure: 100,
-    price: 510,
-    date: "22 Feb 2023",
-    user: "wade-warren",
-  },
-  {
-    key: "3",
-    title: "Premium Customers",
-    expenditure: 60,
-    price: 17420,
-    date: "22 Mar 2021",
-    user: "jenny-wilson",
-  },
-  {
-    key: "4",
-    title: "Exclusive High-Spending Patrons",
-    expenditure: 70,
-    price: 2500,
-    date: "22 April 2024",
-    user: "robert-fox",
-  },
-  {
-    key: "5",
-    title: "Affluent Consumer Segment",
-    expenditure: 20,
-    price: 925,
-    date: "22 May 2024",
-    user: "williamson",
-  },
-];
-
 const ExpensesPage = () => {
-  const [expenses, setExpenses] = useState(demoData);
-  const [loading, setLoading] = useState(false);
-  const [isAddEditModalVisible, setIsAddEditModalVisible] = useState(false);
+  // --- STATE MANAGEMENT ---
+  const { user } = useAuth();
+  const { notification } = App.useApp();
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [deletingExpense, setDeletingExpense] = useState(null);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm(); // Single form instance for the page
+  const [filters, setFilters] = useState({
+    sortBy: "newdate",
+    date: null,
+    keyword: "",
+  });
+
+  const fetchExpenses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await expenseService.getExpenses(filters);
+      const formattedData = data.map((exp) => ({ ...exp, key: exp._id }));
+      setExpenses(formattedData);
+    } catch (error) {
+      notification.error({ message: "Failed to fetch expenses" });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
   useEffect(() => {
-    if (isAddEditModalVisible) {
-      if (editingExpense) {
-        form.setFieldsValue({
-          ...editingExpense,
-          date: dayjs(editingExpense.date, "DD MMM YY YY"),
-        });
-      } else {
-        form.resetFields();
-      }
-    } else if (isDeleteModalVisible && deletingExpense) {
-      form.setFieldsValue({
-        ...deletingExpense,
-        date: dayjs(deletingExpense.date, "DD MMM YYYY"),
-      });
-    }
-  }, [
-    isAddEditModalVisible,
-    isDeleteModalVisible,
-    editingExpense,
-    deletingExpense,
-    form,
-  ]);
-  const showNotification = (type, message, description) => {
-    notification.open({
-      message,
-      description,
-      icon:
-        type === "success" ? (
-          <CheckCircleFilled style={{ color: "#52c41a" }} />
-        ) : (
-          <CloseCircleFilled style={{ color: "#ff4d4f" }} />
-        ),
-      placement: "topRight",
-    });
+    fetchExpenses();
+  }, [fetchExpenses]);
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [key]: value,
+    }));
   };
 
+  // Effect to populate form when a modal opens
+  useEffect(() => {
+    if (isModalVisible) {
+      if (editingExpense) {
+        // We are editing, so populate with existing data
+        form.setFieldsValue({
+          ...editingExpense,
+          date: dayjs(editingExpense.date, "YYYY-MM-DD"), // Use the correct format
+        });
+      } else {
+        // We are adding, so ensure the form is clear
+        form.resetFields();
+      }
+    }
+  }, [isModalVisible, editingExpense, form]);
+
+  // --- HANDLERS ---
   const handleCancel = () => {
-    setIsAddEditModalVisible(false);
+    setIsModalVisible(false);
     setIsDeleteModalVisible(false);
     setEditingExpense(null);
     setDeletingExpense(null);
-    form.resetFields();
   };
 
   const handleShowAddModal = () => {
     setEditingExpense(null);
-    setIsAddEditModalVisible(true);
+    setIsModalVisible(true);
   };
 
   const handleShowEditModal = (record) => {
     setEditingExpense(record);
-    setIsAddEditModalVisible(true);
+    setIsModalVisible(true);
   };
 
   const handleShowDeleteModal = (record) => {
@@ -140,130 +105,69 @@ const ExpensesPage = () => {
     setIsDeleteModalVisible(true);
   };
 
-  const handleFormSubmit = () => {
-    form
-      .validateFields()
-      .then((values) => {
+  const handleFormSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const formattedValues = {
+        ...values,
+        date: values.date ? values.date.format("YYYY-MM-DD") : null,
+      };
+
+      if (editingExpense) {
+        await expenseService.updateExpense(editingExpense._id, formattedValues);
+        notification.success({ message: "Expense updated successfully!" });
+      } else {
+        if (user) {
+          const currentUserExpenses = expenses.filter(
+            (exp) => exp.user._id === user._id
+          );
+
+          const totalSpent = currentUserExpenses.reduce(
+            (sum, exp) => sum + exp.price,
+            0
+          );
+
+          const budgetLimit = user.budgetLimit || 0;
+
+          if (totalSpent + values.price > budgetLimit) {
+            notification.error({
+              message: "Budget Exceeded",
+              description: `Adding this expense would exceed your budget of ${budgetLimit.toLocaleString()} PKR.`,
+            });
+            return;
+          }
+        }
+
         const formattedValues = {
           ...values,
-          date: values.date ? values.date.format("DD MMM YYYY") : "",
+          date: values.date ? values.date.format("YYYY-MM-DD") : null,
         };
+        await expenseService.createExpense(formattedValues);
+        notification.success({ message: "Expense added successfully!" });
+      }
 
-        if (editingExpense) {
-          setExpenses(
-            expenses.map((exp) =>
-              exp.key === editingExpense.key
-                ? { ...editingExpense, ...formattedValues }
-                : exp
-            )
-          );
-          showNotification(
-            "success",
-            "Expense Updated",
-            "Expense updated successfully!"
-          );
-        } else {
-          const newExpense = {
-            key: uuidv4(),
-            ...formattedValues,
-            user: "current-user",
-            expenditure: Math.floor(Math.random() * 101),
-          };
-          setExpenses([newExpense, ...expenses]);
-          showNotification(
-            "success",
-            "Expense Added",
-            "Expense added successfully!"
-          );
-        }
-        handleCancel();
-      })
-      .catch((info) => console.log("Validate Failed:", info));
+      fetchExpenses();
+      handleCancel();
+    } catch (error) {
+      console.error("Submission Failed:", error);
+      notification.error({
+        message: "Submission Failed",
+        description: error.response?.data?.message || "Please check your form.",
+      });
+    }
   };
 
-  const handleDeleteConfirm = () => {
-    setExpenses(expenses.filter((exp) => exp.key !== deletingExpense.key));
-    showNotification(
-      "error",
-      "Expense Deleted",
-      "Expense deleted successfully!"
-    );
+  const handleDeleteConfirm = async () => {
+    try {
+      await expenseService.deleteExpense(deletingExpense._id);
+      notification.success({ message: "Expense deleted successfully!" });
+      fetchExpenses();
+    } catch (error) {
+      notification.error({ message: "Failed to delete expense." });
+    }
     handleCancel();
   };
 
-  const expenseColumns = [
-    { title: "Expense", dataIndex: "title", key: "title" },
-    {
-      title: "Total Expenditure",
-      dataIndex: "expenditure",
-      key: "expenditure",
-      render: (p) => (
-        <Progress percent={p} showInfo={true} strokeColor="#6c63ff" />
-      ),
-    },
-    {
-      title: "Price(PKR)",
-      dataIndex: "price",
-      key: "price",
-      render: (t) => t.toLocaleString(),
-    },
-    { title: "Date", dataIndex: "date", key: "date" },
-    { title: "User", dataIndex: "user", key: "user" },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={<DeleteOutlined style={{ color: "red" }} />}
-            onClick={() => handleShowDeleteModal(record)}
-          />
-          <Button
-            type="text"
-            icon={<EditOutlined style={{ color: "#6c63ff" }} />}
-            onClick={() => handleShowEditModal(record)}
-          />
-        </Space>
-      ),
-    },
-  ];
-
-  const addEditFooter = (
-    <Row gutter={8}>
-      <Col span={12}>
-        <Button block size="large" onClick={handleCancel}>
-          Cancel
-        </Button>
-      </Col>
-      <Col span={12}>
-        <PrimaryButton block onClick={handleFormSubmit}>
-          {editingExpense ? "Save Changes" : "Add"}
-        </PrimaryButton>
-      </Col>
-    </Row>
-  );
-
-  const deleteFooter = (
-    <Row gutter={8}>
-      <Col span={12}>
-        <Button block size="large" onClick={handleCancel}>
-          Cancel
-        </Button>
-      </Col>
-      <Col span={12}>
-        <Button
-          block
-          size="large"
-          type="primary"
-          danger
-          onClick={handleDeleteConfirm}
-        >
-          Delete
-        </Button>
-      </Col>
-    </Row>
-  );
   const filterLabelStyle = {
     display: "inline-flex",
     alignItems: "center",
@@ -275,45 +179,53 @@ const ExpensesPage = () => {
     color: "rgba(0, 0, 0, 0.45)",
     height: "32px",
   };
-  const expenseFilters = (
-    <Col>
-      <Space size="middle">
-        <Space.Compact>
-          <span style={filterLabelStyle}>Sort By</span>
-          <Select
-            variant="borderless"
-            defaultValue="all"
-            style={{ width: 120 }}
-          >
-            <Select.Option value="all">All</Select.Option>
-            <Select.Option value="highprice">
-              Price: Highest to Lowest
-            </Select.Option>
-            <Select.Option value="lowprice">
-              Price: Lowest to Highest
-            </Select.Option>
-            <Select.Option value="newdate">
-              Date: Newest to Oldest
-            </Select.Option>
-            <Select.Option value="olddate">
-              Date: Oldest to Newest
-            </Select.Option>
-          </Select>
-        </Space.Compact>
-
-        <Space.Compact>
-          <span style={filterLabelStyle}>By Date</span>
-          <DatePicker variant="borderless" placeholder="13/06/2024" />
-        </Space.Compact>
-
-        <Input
-          placeholder="Search"
-          prefix={<SearchOutlined />}
-          style={{ width: 300 }}
-        />
-      </Space>
-    </Col>
-  );
+  const expenseColumns = [
+    { title: "Expense", dataIndex: "title", key: "title" },
+    {
+      title: "Expenditure",
+      dataIndex: "expenditure",
+      key: "expenditure",
+      render: (p) => (
+        <Progress percent={p} showInfo={true} strokeColor="#6c63ff" />
+      ),
+    },
+    {
+      title: "Price (PKR)",
+      dataIndex: "price",
+      key: "price",
+      render: (t) => (t ? t.toLocaleString() : "N/A"),
+    },
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      render: (d) => dayjs(d).format("DD MMM YYYY"),
+    },
+    {
+      title: "User",
+      dataIndex: "user",
+      key: "user",
+      render: (user) => (user ? `${user.firstName} ${user.lastName}` : "N/A"),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            onClick={() => handleShowDeleteModal(record)}
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleShowEditModal(record)}
+          />
+        </Space>
+      ),
+    },
+  ];
 
   const expenseFormFields = (isDisabled = false) => [
     {
@@ -322,17 +234,15 @@ const ExpensesPage = () => {
       type: "text",
       span: 24,
       rules: [{ required: true }],
-      placeholder: "E.g., Office Supplies",
       disabled: isDisabled,
     },
     {
       name: "price",
-      label: "Price(PKR)",
+      label: "Price (PKR)",
       type: "number",
       span: 12,
       rules: [{ required: true }],
       prefix: "Rs",
-      placeholder: "3000",
       disabled: isDisabled,
     },
     {
@@ -345,6 +255,46 @@ const ExpensesPage = () => {
     },
   ];
 
+  const expenseFilters = (
+    <Space size="middle">
+      <Space.Compact>
+        <span style={filterLabelStyle}>Sort By</span>
+        <Select
+          value={filters.sortBy}
+          onChange={(value) => handleFilterChange("sortBy", value)}
+          variant="borderless"
+          style={{ width: 180 }} // Widen for longer text
+        >
+          <Select.Option value="newdate">Date: Newest to Oldest</Select.Option>
+          <Select.Option value="olddate">Date: Oldest to Newest</Select.Option>
+          <Select.Option value="highprice">
+            Price: Highest to Lowest
+          </Select.Option>
+          <Select.Option value="lowprice">
+            Price: Lowest to Highest
+          </Select.Option>
+        </Select>
+      </Space.Compact>
+
+      <Space.Compact>
+        <span style={filterLabelStyle}>By Date</span>
+        <DatePicker
+          onChange={(date, dateString) =>
+            handleFilterChange("date", dateString)
+          }
+          variant="borderless"
+        />
+      </Space.Compact>
+
+      <Input
+        placeholder="Search by title"
+        prefix={<SearchOutlined />}
+        onChange={(e) => handleFilterChange("keyword", e.target.value)}
+        style={{ width: 200 }}
+      />
+    </Space>
+  );
+
   return (
     <>
       <DataTable
@@ -355,36 +305,35 @@ const ExpensesPage = () => {
         loading={loading}
         filters={expenseFilters}
       />
+
       <Modal
         title={editingExpense ? "Edit Expense" : "Add Expense"}
-        open={isAddEditModalVisible}
+        open={isModalVisible}
+        onOk={handleFormSubmit}
         onCancel={handleCancel}
-        footer={null}
-        destroyOnHidden
+        okText={editingExpense ? "Save Changes" : "Add"}
+        destroyOnClose
       >
         <GenericForm
           formInstance={form}
-          fields={expenseFormFields(false)}
-          onFinish={handleFormSubmit}
-          footer={addEditFooter}
+          fields={expenseFormFields()}
+          footer={null}
         />
       </Modal>
+
       <Modal
-        title={
-          <Typography.Title level={4} style={{ textAlign: "center" }}>
-            Delete Expense
-          </Typography.Title>
-        }
+        title="Delete Expense"
         open={isDeleteModalVisible}
+        onOk={handleDeleteConfirm}
         onCancel={handleCancel}
-        footer={null}
-        destroyOnHidden
+        okText="Delete"
+        okButtonProps={{ danger: true }}
+        destroyOnClose
       >
-        <GenericForm
-          formInstance={form}
-          fields={expenseFormFields(true)}
-          footer={deleteFooter}
-        />
+        <p>
+          Are you sure you want to delete the expense: "
+          <b>{deletingExpense?.title}</b>"?
+        </p>
       </Modal>
     </>
   );

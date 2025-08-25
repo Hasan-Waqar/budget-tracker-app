@@ -1,5 +1,14 @@
-import React from "react";
-import { Card, Avatar, Typography, Space, Button, Upload, message } from "antd";
+import React, { useState } from "react";
+import {
+  Card,
+  Avatar,
+  Typography,
+  Space,
+  Button,
+  Upload,
+  message,
+  App,
+} from "antd";
 import {
   PhoneOutlined,
   MailOutlined,
@@ -9,6 +18,7 @@ import {
   CameraOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
+import authService from "../../services/authService";
 
 const { Title, Text } = Typography;
 
@@ -39,7 +49,10 @@ const avatarOverlayStyle = {
 };
 
 const ProfileCard = () => {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
+  const [uploading, setUploading] = useState(false);
+
+  const { message: messageApi } = App.useApp();
 
   if (!user) {
     return <Card loading={true}></Card>;
@@ -47,15 +60,17 @@ const ProfileCard = () => {
 
   const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
   const location = [user.city, user.state].filter(Boolean).join(", ");
-
+  /*
   const handleBeforeUpload = (file) => {
     const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
     if (!isJpgOrPng) {
-      message.error("You can only upload JPG/PNG file!");
+      messageApi.error("You can only upload a JPG/PNG file!");
+      return;
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error("Image must be smaller than 2MB!");
+      messageApi.error("Image must be smaller than 2MB!");
+      return;
     }
 
     if (isJpgOrPng && isLt2M) {
@@ -67,15 +82,40 @@ const ProfileCard = () => {
 
     return false; // Prevent the default upload behavior
   };
+*/
+  const handleUpload = async (options) => {
+    const { file } = options;
+
+    // --- VALIDATION ---
+    const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
+    if (!isJpgOrPng) {
+      messageApi.error("You can only upload a JPG/PNG file!");
+      return; // Stop the function
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      messageApi.error("Image must be smaller than 2MB!");
+      return; // Stop the function
+    }
+
+    // --- API CALL ---
+    try {
+      setUploading(true);
+      const updatedUser = await authService.uploadPfp(file);
+      setUser(updatedUser);
+      messageApi.success("Profile picture updated!");
+    } catch (error) {
+      console.error("Upload failed:", error); // Log the actual error
+      messageApi.error("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <Card style={{ background: "#fff" }}>
       <div style={{ textAlign: "center" }}>
-        <Upload
-          name="avatar"
-          showUploadList={false}
-          beforeUpload={handleBeforeUpload}
-        >
+        <Upload name="pfp" showUploadList={false} customRequest={handleUpload}>
           <div
             style={avatarContainerStyle}
             onMouseEnter={(e) => {
@@ -94,10 +134,10 @@ const ProfileCard = () => {
               src={user.pfp || null}
               style={{ border: "4px solid #f0f0f0" }}
             >
-              {fullName.charAt(0)}
+              {!user.pfp && !uploading ? fullName.charAt(0) : null}
             </Avatar>
             <div className="avatar-overlay" style={avatarOverlayStyle}>
-              <CameraOutlined />
+              {!uploading && <CameraOutlined />}
             </div>
           </div>
         </Upload>

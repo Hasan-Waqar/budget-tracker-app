@@ -14,6 +14,7 @@ import AuthLayout, { AuthLink } from "../components/common/AuthLayout";
 import signupIllustration from "../assets/images/signup-illustration.png";
 import PrimaryButton from "../components/common/PrimaryButton";
 import { useAuth } from "../context/AuthContext";
+import authService from "../services/authService";
 
 const SignupPage = () => {
   const { signup } = useAuth();
@@ -23,8 +24,13 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
+    setLoading(true);
     try {
-      await signup(values);
+      const newUser = await authService.signup(values);
+
+      setUser(newUser);
+
+      navigate("/expenses");
     } catch (error) {
       console.error("Signup API call failed:", error);
       notification.error({
@@ -33,6 +39,8 @@ const SignupPage = () => {
           error.response?.data?.message || "An error occurred during signup.",
         placement: "topRight",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,10 +81,9 @@ const SignupPage = () => {
     {
       name: "confirmPassword",
       label: "Confirm Password",
-      type: "password", // Using our generic password field
+      type: "password",
       rules: [
         { required: true, message: "Please confirm your password!" },
-        // The validator needs access to the form instance
         ({ getFieldValue }) => ({
           validator(_, value) {
             if (!value || getFieldValue("password") === value) {
@@ -125,133 +132,6 @@ const SignupPage = () => {
         loading={loading}
         footer={signupFooter}
       />
-    </AuthLayout>
-  );
-  return (
-    <AuthLayout
-      illustration={signupIllustration}
-      title="Sign Up"
-      subTitle="Welcome to our community"
-      headerMargin="24px"
-    >
-      <Form
-        name="signup"
-        onFinish={onFinish}
-        layout="vertical"
-        requiredMark={false}
-      >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="First Name"
-              name="firstName"
-              rules={[
-                { required: true, message: "Please input your first name!" },
-              ]}
-            >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Cameron"
-                size="large"
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="Last Name"
-              name="lastName"
-              rules={[
-                { required: true, message: "Please input your last name!" },
-              ]}
-            >
-              <Input placeholder="Williamson" size="large" />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Form.Item
-          label="Email"
-          name="email"
-          rules={[
-            {
-              required: true,
-              type: "email",
-              message: "Please input a valid email!",
-            },
-          ]}
-        >
-          <Input
-            prefix={<MailOutlined />}
-            placeholder="test@gmail.com"
-            size="large"
-          />
-        </Form.Item>
-        <Form.Item
-          label="Password"
-          name="password"
-          rules={[{ required: true, message: "Please input your password!" }]}
-        >
-          <Input.Password
-            prefix={<LockOutlined />}
-            placeholder="Enter your password"
-            size="large"
-            iconRender={(visible) =>
-              visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
-            }
-          />
-        </Form.Item>
-        <Form.Item
-          label="Confirm Password"
-          name="confirmPassword"
-          dependencies={["password"]}
-          hasFeedback
-          rules={[
-            { required: true, message: "Please confirm your password!" },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue("password") === value) {
-                  return Promise.resolve();
-                }
-                return Promise.reject(
-                  new Error("The two passwords do not match!")
-                );
-              },
-            }),
-          ]}
-        >
-          <Input.Password
-            prefix={<LockOutlined />}
-            placeholder="Confirm your password"
-            size="large"
-            iconRender={(visible) =>
-              visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
-            }
-          />
-        </Form.Item>
-        <Form.Item
-          label="Budget Limit"
-          name="budgetLimit"
-          rules={[
-            { required: true, message: "Please input your budget limit!" },
-          ]}
-        >
-          <InputNumber
-            prefix="$"
-            placeholder="Enter Amount"
-            size="large"
-            style={{ width: "100%" }}
-          />
-        </Form.Item>
-        <Form.Item style={{ marginTop: "16px" }}>
-          <Button type="primary" htmlType="submit" block size="large">
-            SIGN UP
-          </Button>
-        </Form.Item>
-        <AuthLink
-          text="Already have an account?"
-          linkText="Log In"
-          to="/login"
-        />
-      </Form>
     </AuthLayout>
   );
 };

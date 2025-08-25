@@ -11,12 +11,14 @@ import AppLayout from "./components/common/AppLayout";
 import HeaderLayout from "./components/common/HeaderLayout"; // Assuming ProfileLayout is named HeaderLayout
 import PrivateRoute from "./components/common/PrivateRoute";
 import PublicRoute from "./components/common/PublicRoute";
+import AdminRoute from "./components/common/AdminRoute";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import UsersPage from "./pages/UsersPage";
 import ProfilePage from "./pages/ProfilePage";
+import AnalysisPage from "./pages/AnalysisPage";
 import { AuthProvider } from "./context/AuthContext";
 import "antd/dist/reset.css";
 import "./index.css";
@@ -51,38 +53,27 @@ const ProfileLayoutRoute = () => (
   <HeaderLayout>
     <Outlet />
   </HeaderLayout>
-); // Use the correct name here
+);
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* --- PUBLIC ROUTES --- */}
-      {/* Accessible only when logged out */}
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
-      {/* --- PROTECTED ROUTES --- */}
-      {/* Accessible only when logged in */}
       <Route element={<PrivateRoute />}>
-        {/* Group for main app pages that use the sidebar */}
         <Route element={<MainAppLayout />}>
           <Route path="/" element={<Navigate to="/expenses" />} />
           <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route
-            path="/analysis"
-            element={
-              <>
-                <div>Analysis Page</div>
-              </>
-            }
-          />
+          <Route element={<AdminRoute />}>
+            <Route path="/users" element={<UsersPage />} />
+          </Route>
+          <Route path="/analysis" element={<AnalysisPage />} />
         </Route>
 
-        {/* Group for profile page that uses the header-only layout */}
         <Route element={<ProfileLayoutRoute />}>
           <Route path="/profile" element={<ProfilePage />} />
         </Route>

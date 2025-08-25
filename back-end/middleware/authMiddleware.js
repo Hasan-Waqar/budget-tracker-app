@@ -4,19 +4,14 @@ const User = require("../models/UserModel.js");
 const protect = async (req, res, next) => {
   let token;
 
-  // We will be reading the token from an httpOnly cookie
   token = req.cookies.jwt;
 
   if (token) {
     try {
-      // Verify the token using the secret key
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Find the user by the ID from the token's payload
-      // and attach the user object to the request (excluding the password)
       req.user = await User.findById(decoded.id).select("-password");
 
-      // Proceed to the next step (the actual controller)
       next();
     } catch (error) {
       console.error("Token verification failed:", error);
@@ -27,4 +22,13 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === "Admin") {
+    next();
+  } else {
+    res.status(401);
+    throw new Error("Not authorized as an admin");
+  }
+};
+
+module.exports = { protect, admin };

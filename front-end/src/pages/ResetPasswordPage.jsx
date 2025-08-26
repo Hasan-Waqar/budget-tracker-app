@@ -1,7 +1,7 @@
 import React from "react";
 import { Form, Input, Button } from "antd";
 import { MailOutlined } from "@ant-design/icons";
-import AuthLayout, { AuthLink } from "../components/common/AuthLayout";
+import AuthLayout, { AuthLink } from "../components/layout/AuthLayout";
 import resetPasswordIllustration from "../assets/images/reset-password-illustration.png"; // Verify this path
 
 const ResetPasswordPage = () => {

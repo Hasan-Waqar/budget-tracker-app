@@ -149,32 +149,24 @@ const getExpenseStats = async (req, res) => {
       matchQuery.user = req.user._id;
     }
 
-    // --- THIS IS THE NEW LOGIC FOR THE DATE RANGE FILTER ---
-    const range = req.query.range || "12m"; // Default to '12m' if no range is provided
+    const range = req.query.range || "12m";
     const now = new Date();
     let startDate;
 
     switch (range) {
       case "6m":
-        // Set the date to 6 months ago from the first day of the current month
         startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
         break;
       case "3m":
-        // Set the date to 3 months ago from the first day of the current month
         startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
         break;
       case "12m":
       default:
-        // Set the date to 12 months ago from the first day of the current month
         startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
         break;
     }
 
-    // Add the date condition to our main query
     matchQuery.date = { $gte: startDate };
-    // --- END NEW LOGIC ---
-
-    // The rest of the aggregation pipelines will now use this filtered matchQuery
     const totalStats = await Expense.aggregate([
       { $match: matchQuery },
       {

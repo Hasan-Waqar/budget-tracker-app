@@ -10,7 +10,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import GenericForm from "../components/common/GenericForm";
-import AuthLayout, { AuthLink } from "../components/common/AuthLayout";
+import AuthLayout, { AuthLink } from "../components/layout/AuthLayout";
 import signupIllustration from "../assets/images/signup-illustration.png";
 import PrimaryButton from "../components/common/PrimaryButton";
 import { useAuth } from "../context/AuthContext";

@@ -40,11 +40,8 @@ const updateProfile = async (userData) => {
 };
 
 const uploadPfp = async (file) => {
-  // We must send the file as FormData for the backend to process it
   const formData = new FormData();
-  formData.append("pfp", file); // The key 'pfp' must match the backend route config
-
-  // We still need the token to access this protected route
+  formData.append("pfp", file);
   const { token } = JSON.parse(localStorage.getItem("userInfo"));
   const config = {
     headers: {
@@ -55,7 +52,6 @@ const uploadPfp = async (file) => {
 
   const { data } = await axios.post(`${API_URL}/profile/pfp`, formData, config);
 
-  // Update localStorage with the fresh user data from the server
   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
   const updatedUserInfo = { ...userInfo, ...data };
   localStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));

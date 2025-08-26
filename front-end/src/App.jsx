@@ -7,11 +7,11 @@ import {
   Outlet,
 } from "react-router-dom";
 import { ConfigProvider, App } from "antd";
-import AppLayout from "./components/common/AppLayout";
-import HeaderLayout from "./components/common/HeaderLayout"; // Assuming ProfileLayout is named HeaderLayout
-import PrivateRoute from "./components/common/PrivateRoute";
-import PublicRoute from "./components/common/PublicRoute";
-import AdminRoute from "./components/common/AdminRoute";
+import AppLayout from "./components/layout/AppLayout";
+import HeaderLayout from "./components/layout/HeaderLayout";
+import PrivateRoute from "./components/routes/PrivateRoute";
+import PublicRoute from "./components/routes/PublicRoute";
+import AdminRoute from "./components/routes/AdminRoute";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -43,7 +43,6 @@ const theme = {
   },
 };
 
-// Define the layouts for our routes
 const MainAppLayout = () => (
   <AppLayout>
     <Outlet />

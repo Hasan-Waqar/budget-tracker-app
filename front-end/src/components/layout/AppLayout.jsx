@@ -95,7 +95,7 @@ const AppLayout = ({ children }) => {
           <LogoutOutlined /> Logout
         </Space>
       ),
-      onClick: handleLogout, // The logout function is attached here
+      onClick: handleLogout,
     },
   ];
 
@@ -103,7 +103,6 @@ const AppLayout = ({ children }) => {
     <div style={{ padding: "16px", borderBottom: "1px solid #f0f0f0" }}>
       <Space>
         <Avatar size="large" src={user?.pfp}>
-          {/* Fallback to the first initial if no profile picture */}
           {user?.firstName?.charAt(0)}
         </Avatar>
         <div>

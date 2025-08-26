@@ -25,7 +25,6 @@ const FormField = ({
         placeholder={placeholder}
         size="large"
         disabled={disabled}
-        // Specific props for password fields
         {...(isPassword && {
           iconRender: (visible) =>
             visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />,

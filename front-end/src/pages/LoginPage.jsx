@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import authService from "../services/authService";
 
 import { Link, useNavigate } from "react-router-dom";
-import AuthLayout, { AuthLink } from "../components/common/AuthLayout";
+import AuthLayout, { AuthLink } from "../components/layout/AuthLayout";
 import loginIllustration from "../assets/images/login-illustration.png";
 import axios from "axios";
 import PrimaryButton from "../components/common/PrimaryButton";

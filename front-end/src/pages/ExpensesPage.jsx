@@ -26,7 +26,6 @@ import { useAuth } from "../context/AuthContext";
 import dayjs from "dayjs";
 
 const ExpensesPage = () => {
-  // --- STATE MANAGEMENT ---
   const { user } = useAuth();
   const { notification } = App.useApp();
   const [expenses, setExpenses] = useState([]);
@@ -35,7 +34,7 @@ const ExpensesPage = () => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [deletingExpense, setDeletingExpense] = useState(null);
-  const [form] = Form.useForm(); // Single form instance for the page
+  const [form] = Form.useForm();
   const [filters, setFilters] = useState({
     sortBy: "newdate",
     date: null,
@@ -66,17 +65,14 @@ const ExpensesPage = () => {
     }));
   };
 
-  // Effect to populate form when a modal opens
   useEffect(() => {
     if (isModalVisible) {
       if (editingExpense) {
-        // We are editing, so populate with existing data
         form.setFieldsValue({
           ...editingExpense,
-          date: dayjs(editingExpense.date, "YYYY-MM-DD"), // Use the correct format
+          date: dayjs(editingExpense.date, "YYYY-MM-DD"),
         });
       } else {
-        // We are adding, so ensure the form is clear
         form.resetFields();
       }
     }

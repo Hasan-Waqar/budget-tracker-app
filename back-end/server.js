@@ -13,8 +13,8 @@ const PORT = process.env.PORT || 5001;
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // The origin of your React app
-    credentials: true, // Allow cookies to be sent
+    origin: "http://localhost:5173",
+    credentials: true,
   })
 );
 app.use(express.json());

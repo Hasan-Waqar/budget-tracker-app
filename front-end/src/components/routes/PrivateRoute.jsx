@@ -1,12 +1,11 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Spin } from "antd"; // Import a loading spinner
+import { Spin } from "antd";
 
 const PrivateRoute = () => {
   const { user, loading } = useAuth();
 
-  // If we are still checking for a user, show a loading screen
   if (loading) {
     return (
       <div
@@ -22,7 +21,6 @@ const PrivateRoute = () => {
     );
   }
 
-  // After the check is done, redirect if there's no user
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 };
 

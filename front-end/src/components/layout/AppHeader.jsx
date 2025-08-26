@@ -14,12 +14,6 @@ import logoPath from "../../assets/logo/logo.png";
 
 const { Header } = Layout;
 
-/**
- * A reusable application header.
- * @param {boolean} showSiderToggle - If true, shows the menu collapse/expand button.
- * @param {Function} onSiderToggle - The function to call when the sider toggle is clicked.
- * @param {boolean} isSiderCollapsed - The current collapsed state of the sider.
- */
 const AppHeader = ({
   showSiderToggle = false,
   onSiderToggle,
@@ -84,11 +78,6 @@ const AppHeader = ({
       }}
     >
       <Space align="center">
-        {/*
-          HERE IS THE FIX:
-          The Sider Toggle button is now ALWAYS rendered if showSiderToggle is true.
-          It no longer prevents the logo/title from rendering.
-        */}
         {showSiderToggle && (
           <Button
             type="text"
@@ -105,12 +94,6 @@ const AppHeader = ({
           />
         )}
 
-        {/* 
-          The Logo and Title are now rendered based on whether we are in the main app layout.
-          If we are toggling the sider, it means we are in AppLayout, so we don't need to show the logo here.
-          The logo will be in the Sider itself.
-          If we are NOT toggling the sider (i.e., in ProfileLayout), we show the logo.
-        */}
         {!showSiderToggle && (
           <div style={{ display: "flex", alignItems: "center" }}>
             <img
@@ -124,7 +107,6 @@ const AppHeader = ({
           </div>
         )}
       </Space>
-      {/* Right Side: Icons and Profile Dropdown */}
       <Space size="middle">
         <Button type="text" shape="circle" icon={<BellOutlined />} />
         <Dropdown

@@ -218,8 +218,6 @@ const deleteUser = async (req, res) => {
 
 const updateUserPfp = async (req, res) => {
   try {
-    // Multer has already uploaded the file to Cloudinary.
-    // The URL of the uploaded image is available in req.file.path.
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded." });
     }
@@ -229,15 +227,12 @@ const updateUserPfp = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Update the pfp field with the new URL from Cloudinary
     user.pfp = req.file.path;
     const updatedUser = await user.save();
 
-    // Send back the complete, updated user object so the frontend state can be synced
     res.status(200).json({
       _id: updatedUser._id,
       firstName: updatedUser.firstName,
-      // ... include all other user fields that are in your AuthContext ...
       pfp: updatedUser.pfp,
     });
   } catch (error) {
@@ -249,7 +244,6 @@ const updateUserPfp = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  // Admin provides these details in the form
   const { firstName, lastName, email, password, budgetLimit, role } = req.body;
 
   try {
@@ -264,13 +258,12 @@ const createUser = async (req, res) => {
       firstName,
       lastName,
       email,
-      password, // The model's pre-save hook will hash this
+      password,
       budgetLimit,
-      role: role || "User", // Default to 'User' if no role is provided
+      role: role || "User",
     });
 
     if (user) {
-      // We don't need to send a token, just confirmation
       res.status(201).json({
         _id: user._id,
         firstName: user.firstName,

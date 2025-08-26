@@ -3,21 +3,19 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
-    // --- Existing Fields (no changes) ---
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     budgetLimit: { type: Number, required: true },
-    role: { type: String, enum: ["User", "Admin"], default: "User" }, // enum is good for roles
+    role: { type: String, enum: ["User", "Admin"], default: "User" },
 
-    // --- NEW FIELDS TO ADD ---
-    pfp: { type: String, default: "" }, // Will store a URL to the profile picture
+    pfp: { type: String, default: "" },
     aboutMe: { type: String, default: "" },
     fatherName: { type: String, default: "" },
     phone: { type: String, default: "" },
     education: { type: String, default: "" },
-    dob: { type: Date, default: null }, // Date of Birth
+    dob: { type: Date, default: null },
     gender: { type: String, default: "" },
     jobTitle: { type: String, default: "" },
     streetAddress: { type: String, default: "" },
@@ -26,12 +24,10 @@ const userSchema = new mongoose.Schema(
     zipCode: { type: String, default: "" },
   },
   {
-    // Add timestamps to automatically track createdAt and updatedAt
     timestamps: true,
   }
 );
 
-// --- Pre-save hook and methods (no changes) ---
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     next();

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "/api/expenses";
+const API_URL = `${import.meta.env.VITE_API_URL || ""}/api/users`;
 
 const getAuthHeaders = () => {
   const { token } = JSON.parse(localStorage.getItem("userInfo"));

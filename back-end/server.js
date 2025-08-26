@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5001;
 
 const whitelist = [
   "http://localhost:5173",
-  "https://budget-tracker-app-pi-lovat.vercel.app/login",
+  "https://budget-tracker-app-pi-lovat.vercel.app",
 ];
 
 const corsOptions = {

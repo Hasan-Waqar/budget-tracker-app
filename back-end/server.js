@@ -11,7 +11,10 @@ const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-const whitelist = ["http://localhost:5173"];
+const whitelist = [
+  "http://localhost:5173",
+  "https://budget-tracker-71s2rqsjz-hasanwaqar1393-gmailcoms-projects.vercel.app",
+];
 
 const corsOptions = {
   origin: function (origin, callback) {

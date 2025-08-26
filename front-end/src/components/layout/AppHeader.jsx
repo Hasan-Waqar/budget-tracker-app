@@ -112,7 +112,7 @@ const AppHeader = ({
         <Dropdown
           menu={{ items: profileMenuItems }}
           trigger={["click"]}
-          dropdownRender={(menu) => (
+          popupRender={(menu) => (
             <div
               style={{
                 background: "#fff",

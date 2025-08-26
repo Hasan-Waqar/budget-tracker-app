@@ -58,30 +58,40 @@ const AnalysisPage = () => {
     data: chartData,
     xField: "month",
     yField: "value",
-    height: 450,
+    height: 400,
     smooth: true,
-
-    color: "#6c63ff",
-
+    lineStyle: {
+      stroke: "#6c63ff",
+      lineWidth: 2,
+    },
     point: {
       size: 5,
       shape: "circle",
-      style: { fill: "white", stroke: "#6c63ff", lineWidth: 5 },
+      style: { fill: "white", stroke: "#6c63ff", lineWidth: 2 },
     },
-    padding: "auto",
-    appendPadding: [10, 10, 0, 10],
+    legend: false,
+
     xAxis: {
       tickMethod: () => monthNames,
+      title: { text: "Month", style: { fontSize: 14, fill: "#8c8c8c" } },
     },
     yAxis: {
       min: 0,
+      title: { text: "Value (PKR)", style: { fontSize: 14, fill: "#8c8c8c" } },
+      label: { formatter: (v) => v.toLocaleString() },
     },
-    legend: false,
+
     tooltip: {
-      formatter: (datum) => ({
-        name: "Total Spent",
-        value: `PKR ${datum.value.toLocaleString()}`,
-      }),
+      title: "Total Spent",
+
+      formatter: (datum) => {
+        console.log("Tooltip datum:", datum);
+
+        return {
+          name: datum.month,
+          value: `PKR ${datum.value.toLocaleString()}`,
+        };
+      },
     },
   };
 
@@ -113,7 +123,12 @@ const AnalysisPage = () => {
             </Col>
           </Row>
         }
-        bodyStyle={{ padding: 0, background: "#e6e7e8ff" }}
+        styles={{
+          body: {
+            padding: 0,
+          },
+          background: "#e6e7e8ff",
+        }}
       >
         <div style={{ background: "#FFFFFF", paddingTop: "16px" }}>
           <Line {...chartConfig} />

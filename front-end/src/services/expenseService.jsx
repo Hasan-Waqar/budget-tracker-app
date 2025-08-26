@@ -8,6 +8,7 @@ const getAuthHeaders = () => {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    withCredentials: true,
   };
 };
 

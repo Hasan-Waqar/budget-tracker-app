@@ -29,6 +29,7 @@ const updateProfile = async (userData) => {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    withCredentials: true,
   };
 
   const { data } = await axios.put(`${API_URL}/profile`, userData, config);
@@ -48,6 +49,7 @@ const uploadPfp = async (file) => {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
     },
+    withCredentials: true,
   };
 
   const { data } = await axios.post(`${API_URL}/profile/pfp`, formData, config);
